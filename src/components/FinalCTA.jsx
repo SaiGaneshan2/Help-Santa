@@ -1,5 +1,5 @@
 // components/FinalCTA.jsx
-import React from "react";
+import React, { useEffect } from "react";
 import PixelCard from "../assets/style/PixelCard";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -8,7 +8,15 @@ const FinalCTA = () => {
   const nav = useNavigate();
   const game = useSelector((state) => state.game);
   const audioRef = React.useRef(null);
+  const videoRef = React.useRef(null);
   const [musicPlaying, setMusicPlaying] = React.useState(false);
+
+  // Preload video for instant playback
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.load();
+    }
+  }, []);
 
   // Play/Pause music
   const handleMusicToggle = () => {
@@ -119,6 +127,7 @@ const FinalCTA = () => {
           {/* Autoplay video (looping, muted) placed above the CTA button */}
           <div className="w-full flex justify-center mb-6">
             <video
+              ref={videoRef}
               src="./Santa_s_Mysterious_Jungle_Cage.mp4"
               className="w-full max-w-4xl rounded-xl shadow-2xl"
               autoPlay

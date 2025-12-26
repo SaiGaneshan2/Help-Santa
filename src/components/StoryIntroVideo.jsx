@@ -6,6 +6,9 @@ const StoryIntroVideo = ({ onEnd }) => {
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
+      // Preload video
+      video.load();
+      
       const attemptPlay = async () => {
         try {
           video.volume = 0.8;
