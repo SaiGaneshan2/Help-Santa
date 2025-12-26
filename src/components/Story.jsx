@@ -1,10 +1,35 @@
 // components/StoryCarousel.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { items } from "../assets/data/story";
 import Particles from "../assets/style/Particles";
 const StoryCarousel = () => {
   const [currentPage, setCurrentPage] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+
+  // Preload all story images
+  useEffect(() => {
+    const preloadImages = async () => {
+      const imagePromises = items.map((item) => {
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.src = item.image;
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+      });
+
+      try {
+        await Promise.all(imagePromises);
+        setImagesLoaded(true);
+      } catch (error) {
+        console.error("Error preloading images:", error);
+        setImagesLoaded(true); // Still show the component even if some images fail
+      }
+    };
+
+    preloadImages();
+  }, []);
 
   const nextPage = () => {
     setCurrentPage((prev) => (prev + 1) % items.length);
