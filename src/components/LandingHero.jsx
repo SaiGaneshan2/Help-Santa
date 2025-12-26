@@ -99,7 +99,15 @@ function LandingHero() {
   };
 
   return (
-    <section className="relative h-screen w-full flex items-center justify-center snap-start overflow-hidden">
+    <section 
+      className="relative h-screen w-full flex items-center justify-center snap-start overflow-hidden"
+      style={{
+        backgroundImage: 'url(/imagebackground.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
       {/* Enhanced Styles */}
       <style >{`
         @keyframes float {
@@ -278,16 +286,14 @@ function LandingHero() {
         {/* Enhanced Animated Title */}
         <div className="relative">
           <h2 className="text-4xl md:text-6xl lg:text-7xl font-black tracking-widest mb-6 bg-gradient-to-r from-blue-600 via-cyan-400 to-blue-900 bg-clip-text text-transparent title-glow float-animation">
-            SQL SORCERERS
+            The Journey of Christmas Hope
           </h2>
           
         </div>
 
         {/* Enhanced Description */}
         <p className="text-sm sm:text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed drop-shadow-md font-medium">
-          A gamified learning experience where <span className="text-cyan-300 font-bold">stories</span>, 
-          <span className="text-emerald-300 font-bold"> challenges</span>, and 
-          <span className="text-purple-300 font-bold"> stunning visuals</span> unite to practice SQL like never before.
+          A winter-inspired gamified learning experience where holiday stories, engaging challenges, and cozy visuals make SQL practice unforgettable.
         </p>
 
         {/* Enhanced Play Button */}

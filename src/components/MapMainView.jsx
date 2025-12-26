@@ -15,6 +15,11 @@ const GameProgressBar = ({ currentLevel, completedLevels, totalLevels }) => {
   const progressPercentage = (completedLevels.length / totalLevels) * 100;
   
   const getLevelIcon = (levelNum) => {
+    // Special Christmas-themed icons for specific levels
+    if (levelNum === 3) return "🎅"; // Santa at level 3
+    if (levelNum === 7) return "🛷"; // Santa's sleigh at level 7
+    if (levelNum === 10) return "🎁"; // Gift at level 10
+    
     const level = levels.find(l => l.id === levelNum);
     if (!level) return "🗡️";
     
