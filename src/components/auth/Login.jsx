@@ -5,14 +5,14 @@ import { loginUser, checkNewUser, clearError, setError } from '../../redux/authS
 
 const Login = ({ onSwitchToRegister }) => {
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [isCheckingUser, setIsCheckingUser] = useState(false);
+  // const [isCheckingUser, setIsCheckingUser] = useState(false); // Removed local check
 
   const dispatch = useDispatch();
-  const { isLoading, error, isNewUser } = useSelector((state) => state.auth);
+  const { isLoading, error } = useSelector((state) => state.auth);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -27,24 +27,18 @@ const Login = ({ onSwitchToRegister }) => {
     }
   };
 
-  const handleUsernameBlur = async () => {
-    if (formData.username.trim()) {
-      setIsCheckingUser(true);
-      dispatch(checkNewUser(formData.username));
-      setTimeout(() => setIsCheckingUser(false), 500);
-    }
-  };
+  // Removed handleUsernameBlur as we can't easily check existence by email without triggering auth flow
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.username.trim() || !formData.password.trim()) {
+    if (!formData.email.trim() || !formData.password.trim()) {
       dispatch(setError('Please fill in all fields'));
       return;
     }
 
     dispatch(loginUser({
-      username: formData.username.trim(),
+      email: formData.email.trim(),
       password: formData.password,
     }));
   };
@@ -65,24 +59,6 @@ const Login = ({ onSwitchToRegister }) => {
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700 shadow-2xl">
           <h2 className="text-2xl font-bold text-white mb-6 text-center">Login</h2>
 
-          {/* New User Detection */}
-          {isNewUser && formData.username && (
-            <div className="mb-4 p-3 bg-blue-900/30 border border-blue-500/30 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <User size={16} className="text-blue-400" />
-                <span className="text-sm text-blue-300">
-                  New user detected! Would you like to register instead?
-                </span>
-              </div>
-              <button
-                onClick={onSwitchToRegister}
-                className="mt-2 text-sm text-blue-400 hover:text-blue-300 underline"
-              >
-                Create new account
-              </button>
-            </div>
-          )}
-
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 bg-red-900/30 border border-red-500/30 rounded-lg">
@@ -94,31 +70,25 @@ const Login = ({ onSwitchToRegister }) => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Username Field */}
+            {/* Email Field */}
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
-                Username
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                Email
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User size={18} className="text-gray-400" />
                 </div>
                 <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
                   onChange={handleInputChange}
-                  onBlur={handleUsernameBlur}
                   className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  placeholder="Enter your username"
+                  placeholder="Enter your email"
                   required
                 />
-                {isCheckingUser && (
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <Loader2 size={18} className="text-blue-400 animate-spin" />
-                  </div>
-                )}
               </div>
             </div>
 

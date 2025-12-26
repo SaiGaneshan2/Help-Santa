@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 const UserProfile = () => {
   const [isOpen, setIsOpen] = useState(false);
   const user = useSelector((state) => state.auth.user);
+  const gameState = useSelector((state) => state.game);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -25,6 +26,8 @@ const UserProfile = () => {
 
   if (!user) return null;
 
+  const username = user.user_metadata?.username || user.username || user.email?.split('@')[0] || 'Adventurer';
+
   return (
     <div className="relative">
       {/* Profile Button */}
@@ -35,7 +38,7 @@ const UserProfile = () => {
         <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
           <User size={16} />
         </div>
-        <span className="hidden sm:block font-medium">{user.username}</span>
+        <span className="hidden sm:block font-medium">{username}</span>
       </button>
 
       {/* Dropdown Menu */}
@@ -62,28 +65,28 @@ const UserProfile = () => {
                 <Target size={16} className="text-blue-400" />
                 <div>
                   <div className="text-sm text-gray-400">Current Level</div>
-                  <div className="font-bold text-white">{user.gameProgress?.currentLevel || 1}</div>
+                  <div className="font-bold text-white">{gameState?.currentLevel || 1}</div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
                 <Trophy size={16} className="text-yellow-400" />
                 <div>
                   <div className="text-sm text-gray-400">Completed</div>
-                  <div className="font-bold text-white">{user.gameProgress?.progress?.length || 0}</div>
+                  <div className="font-bold text-white">{gameState?.progress?.length || 0}</div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
                 <Clock size={16} className="text-green-400" />
                 <div>
                   <div className="text-sm text-gray-400">Lives</div>
-                  <div className="font-bold text-white">{user.gameProgress?.lives || 3}</div>
+                  <div className="font-bold text-white">{gameState?.lives || 3}</div>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
                 <Settings size={16} className="text-purple-400" />
                 <div>
                   <div className="text-sm text-gray-400">Member Since</div>
-                  <div className="font-bold text-white text-xs">{formatDate(user.createdAt)}</div>
+                  <div className="font-bold text-white text-xs">{formatDate(user.created_at || user.createdAt)}</div>
                 </div>
               </div>
             </div>

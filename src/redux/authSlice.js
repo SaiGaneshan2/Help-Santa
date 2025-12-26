@@ -1,263 +1,155 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { supabase } from '../config/supabase';
 
-// Initial state
-const initialState = {
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
-  isNewUser: false, // Track if user is new to show registration
-};
+// Async Thunks
 
-// Load user data from localStorage
-const loadUserFromStorage = () => {
-  try {
-    const userData = localStorage.getItem('sql-quest-user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      return {
-        user: parsedUser,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-        isNewUser: false,
-      };
+// Login User
+export const loginUser = createAsyncThunk(
+  'auth/login',
+  async ({ email, password }, { rejectWithValue }) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      return data.user;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-  } catch (error) {
-    console.error('Error loading user from storage:', error);
   }
-  return initialState;
-};
+);
 
-// Save user data to localStorage
-const saveUserToStorage = (userData) => {
-  try {
-    localStorage.setItem('sql-quest-user', JSON.stringify(userData));
-  } catch (error) {
-    console.error('Error saving user to storage:', error);
-  }
-};
-
-// Remove user data from localStorage
-const removeUserFromStorage = () => {
-  try {
-    localStorage.removeItem('sql-quest-user');
-  } catch (error) {
-    console.error('Error removing user from storage:', error);
-  }
-};
-
-// Check if username exists in localStorage
-const checkUsernameExists = (username) => {
-  try {
-    const users = localStorage.getItem('sql-quest-users');
-    if (users) {
-      const userList = JSON.parse(users);
-      return userList.some(user => user.username.toLowerCase() === username.toLowerCase());
+// Register User
+export const registerUser = createAsyncThunk(
+  'auth/register',
+  async ({ email, password, username }, { rejectWithValue }) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            level: 1,
+            xp: 0
+          }
+        }
+      });
+      if (error) throw error;
+      return data.user;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-  } catch (error) {
-    console.error('Error checking username:', error);
   }
-  return false;
-};
+);
 
-// Save new user to users list
-const saveNewUser = (userData) => {
-  try {
-    const users = localStorage.getItem('sql-quest-users');
-    let userList = users ? JSON.parse(users) : [];
-    
-    // Check if user already exists
-    const existingUser = userList.find(user => user.username.toLowerCase() === userData.username.toLowerCase());
-    if (existingUser) {
-      throw new Error('Username already exists');
+// Logout User
+export const logoutUser = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
-    
-    userList.push(userData);
-    localStorage.setItem('sql-quest-users', JSON.stringify(userList));
-    return true;
-  } catch (error) {
-    console.error('Error saving new user:', error);
-    throw error;
   }
-};
+);
 
-// Authenticate user
-const authenticateUser = (username, password) => {
-  try {
-    const users = localStorage.getItem('sql-quest-users');
-    if (users) {
-      const userList = JSON.parse(users);
-      const user = userList.find(user => 
-        user.username.toLowerCase() === username.toLowerCase() && 
-        user.password === password
-      );
-      return user || null;
-    }
-  } catch (error) {
-    console.error('Error authenticating user:', error);
+// Set User (used by auth state listener)
+export const setUser = createAsyncThunk(
+  'auth/setUser',
+  async (user) => {
+    return user;
   }
-  return null;
-};
+);
 
-// Create the auth slice
+// Check New User (Legacy support - no-op or simple check)
+// We keep this export to avoid breaking imports in Login.jsx if I missed any
+export const checkNewUser = createAsyncThunk(
+  'auth/checkNewUser',
+  async (username) => {
+    return false; // Always return false as we can't check without auth
+  }
+);
+
 const authSlice = createSlice({
   name: 'auth',
-  initialState: loadUserFromStorage(),
+  initialState: {
+    user: null,
+    isAuthenticated: false,
+    isLoading: false,
+    error: null,
+    isNewUser: false,
+  },
   reducers: {
-    // Set loading state
-    setLoading: (state, action) => {
-      state.isLoading = action.payload;
-    },
-    
-    // Set error state
-    setError: (state, action) => {
-      state.error = action.payload;
-      state.isLoading = false;
-    },
-    
-    // Clear error state
     clearError: (state) => {
       state.error = null;
     },
-    
-    // Check if user is new
-    checkNewUser: (state, action) => {
-      const username = action.payload;
-      state.isNewUser = !checkUsernameExists(username);
-      state.error = null;
+    setError: (state, action) => {
+      state.error = action.payload;
     },
-    
-    // Register new user
-    registerUser: (state, action) => {
-      const { username, password, email } = action.payload;
+    // Legacy reducers to prevent crashes if called
+    setLoading: (state, action) => { state.isLoading = action.payload; },
+    resetNewUserFlag: (state) => { state.isNewUser = false; },
+    updateUserProfile: (state) => { /* No-op for now */ },
+    updateGameProgress: (state) => { /* No-op for now */ }
+  },
+  extraReducers: (builder) => {
+    // Login
+    builder.addCase(loginUser.pending, (state) => {
       state.isLoading = true;
       state.error = null;
-      
-      try {
-        // Check if username already exists
-        if (checkUsernameExists(username)) {
-          state.error = 'Username already exists';
-          state.isLoading = false;
-          return;
-        }
-        
-        // Create new user data
-        const newUser = {
-          id: Date.now().toString(),
-          username,
-          password, // In a real app, this should be hashed
-          email,
-          createdAt: new Date().toISOString(),
-          gameProgress: {
-            currentLevel: 1,
-            lives: 3,
-            progress: [],
-            skipCount: 0,
-            videoWatched: false,
-          },
-          stats: {
-            totalPlayTime: 0,
-            levelsCompleted: 0,
-            totalScore: 0,
-            lastPlayed: new Date().toISOString(),
-          }
-        };
-        
-        // Save user to users list
-        saveNewUser(newUser);
-        
-        // Set as current user
-        state.user = newUser;
+    });
+    builder.addCase(loginUser.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.user = action.payload;
+      state.isAuthenticated = true;
+    });
+    builder.addCase(loginUser.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    });
+
+    // Register
+    builder.addCase(registerUser.pending, (state) => {
+      state.isLoading = true;
+      state.error = null;
+    });
+    builder.addCase(registerUser.fulfilled, (state, action) => {
+      state.isLoading = false;
+      state.user = action.payload;
+      if (action.payload && action.payload.role === 'authenticated') {
         state.isAuthenticated = true;
-        state.isLoading = false;
-        state.isNewUser = false;
-        state.error = null;
-        
-        // Save to localStorage
-        saveUserToStorage(newUser);
-        
-      } catch (error) {
-        state.error = error.message || 'Registration failed';
-        state.isLoading = false;
       }
-    },
-    
-    // Login user
-    loginUser: (state, action) => {
-      const { username, password } = action.payload;
-      state.isLoading = true;
-      state.error = null;
-      
-      try {
-        const user = authenticateUser(username, password);
-        
-        if (user) {
-          state.user = user;
-          state.isAuthenticated = true;
-          state.isLoading = false;
-          state.isNewUser = false;
-          state.error = null;
-          
-          // Save to localStorage
-          saveUserToStorage(user);
-        } else {
-          state.error = 'Invalid username or password';
-          state.isLoading = false;
-        }
-      } catch (error) {
-        state.error = 'Login failed';
-        state.isLoading = false;
-      }
-    },
-    
-    // Logout user
-    logoutUser: (state) => {
+    });
+    builder.addCase(registerUser.rejected, (state, action) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    });
+
+    // Logout
+    builder.addCase(logoutUser.fulfilled, (state) => {
       state.user = null;
       state.isAuthenticated = false;
-      state.isLoading = false;
-      state.error = null;
-      state.isNewUser = false;
-      
-      // Remove from localStorage
-      removeUserFromStorage();
-    },
-    
-    // Update user profile
-    updateUserProfile: (state, action) => {
-      if (state.user) {
-        state.user = { ...state.user, ...action.payload };
-        saveUserToStorage(state.user);
-      }
-    },
-    
-    // Update game progress
-    updateGameProgress: (state, action) => {
-      if (state.user) {
-        state.user.gameProgress = { ...state.user.gameProgress, ...action.payload };
-        saveUserToStorage(state.user);
-      }
-    },
-    
-    // Reset new user flag
-    resetNewUserFlag: (state) => {
-      state.isNewUser = false;
-    }
-  },
+    });
+
+    // Set User
+    builder.addCase(setUser.fulfilled, (state, action) => {
+      state.user = action.payload;
+      state.isAuthenticated = !!action.payload;
+    });
+  }
 });
 
-// Export actions
-export const {
-  setLoading,
-  setError,
-  clearError,
-  checkNewUser,
-  registerUser,
-  loginUser,
-  logoutUser,
-  updateUserProfile,
-  updateGameProgress,
-  resetNewUserFlag,
+export const { 
+  clearError, 
+  setError, 
+  setLoading, 
+  resetNewUserFlag, 
+  updateUserProfile, 
+  updateGameProgress 
 } = authSlice.actions;
 
 // Export selectors
